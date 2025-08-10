@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Custom Global Styles ===== */
+:root {
+  --color-primary-light: #F3E2D4;
+  --color-secondary-light: #C5B0CD;
+  --color-primary-dark: #415E72;
+  --color-secondary-dark: #17313E;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-primary-light);
+  color: var(--color-secondary-dark);
+  font-family: 'Inter', system-ui, sans-serif;
+  scroll-behavior: smooth;
+}
+
+a {
+  @apply font-medium transition-colors;
+  color: var(--color-primary-dark);
+}
+a:hover {
+  color: var(--color-secondary-dark);
+}
+
+button {
+  @apply rounded-lg px-4 py-2 font-medium transition-colors;
+  background-color: var(--color-primary-dark);
+  color: white;
+}
+button:hover {
+  background-color: var(--color-secondary-dark);
+}
+
+/* ===== Scrollbar Styling ===== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-primary-light);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-dark);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary-dark);
+}
