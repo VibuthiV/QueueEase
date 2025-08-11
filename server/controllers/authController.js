@@ -1,55 +1,48 @@
-// controllers/authController.js
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
-
-export async function signupController(req, res) {
+export const signupController = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "Missing fields" });
+    const { name, email, password, role } = req.body;
+    const existingUser = await User.findOne({ email });
 
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: "User exists" });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ name, email, password: hashedPassword, role });
+    await newUser.save();
 
-    const user = await User.create({ name, email, passwordHash });
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
-
-    res.json({ user: { id: user._id, email: user.email, name: user.name }, token });
+    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    res.json({ token, role: newUser.role, message: "Signup successful" });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
-}
+};
 
-export async function loginController(req, res) {
+export const loginController = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "Missing fields" });
-
+    const { email, password, role } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) return res.status(400).json({ message: "Incorrect email or password" });
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
-    res.json({ user: { id: user._id, email: user.email, name: user.name }, token });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-}
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Incorrect email or password" });
 
-export async function meController(req, res) {
-  try {
-    const user = await User.findById(req.userId).select("-passwordHash");
-    res.json({ user });
+    if (user.role !== role) {
+      return res.status(400).json({ message: "Invalid role for this account" });
+    }
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    res.json({ token, role: user.role, message: "Login successful" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
-}
+};
+
+export const meController = async (req, res) => {
+  res.json({ id: req.user.id, role: req.user.role });
+};

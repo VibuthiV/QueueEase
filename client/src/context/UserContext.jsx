@@ -1,30 +1,24 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  // Load user from localStorage on app start
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const token = localStorage.getItem("token");
+    if (token) {
+      axios.get("http://localhost:5000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => setUser({ id: res.data.id, role: res.data.role }))
+      .catch(() => setUser(null));
     }
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-  };
-
   return (
-    <UserContext.Provider value={{ user, login, logout }}>
+    <UserContext.Provider value={{ user, setUser }}>
       {children}
     </UserContext.Provider>
   );

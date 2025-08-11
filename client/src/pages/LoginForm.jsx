@@ -1,54 +1,42 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
-const LoginForm = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function LoginForm() {
+  const [form, setForm] = useState({ email: "", password: "", role: "user" });
+  const [message, setMessage] = useState("");
   const navigate = useNavigate();
-  const { login } = useUser();
+  const { setUser } = useUser();
 
-  const handleSubmit = (e) => {
+  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = async e => {
     e.preventDefault();
-    // Simulate API login success
-    const loggedInUser = { name: "Demo User", email };
-    login(loggedInUser);
-    navigate("/dashboard");
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/login", form);
+      localStorage.setItem("token", res.data.token);
+      setUser({ role: res.data.role });
+      setMessage(res.data.message);
+      navigate("/dashboard");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Error");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center px-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">
-          Login to QueueEase
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition"
-          >
-            Login
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100">
+      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-lg w-96">
+        <h2 className="text-2xl font-bold mb-4">Login</h2>
+        {message && <p className="mb-4 text-center text-red-500">{message}</p>}
+        <input className="w-full p-2 border mb-3" type="email" name="email" placeholder="Email" onChange={handleChange} />
+        <input className="w-full p-2 border mb-3" type="password" name="password" placeholder="Password" onChange={handleChange} />
+        <select name="role" className="w-full p-2 border mb-3" onChange={handleChange}>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Login</button>
+      </form>
     </div>
   );
-};
-
-export default LoginForm;
+}
